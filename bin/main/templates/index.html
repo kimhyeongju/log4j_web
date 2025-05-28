@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureLogistics - 통합물류관리시스템</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --logistics-primary: #2c3e50;
+            --logistics-secondary: #3498db;
+            --logistics-success: #27ae60;
+            --logistics-warning: #f39c12;
+            --logistics-danger: #e74c3c;
+            --logistics-dark: #34495e;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            color: var(--logistics-primary) !important;
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, var(--logistics-primary), var(--logistics-secondary));
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .dashboard-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .security-alert {
+            border-left: 4px solid var(--logistics-danger);
+            background-color: #fff5f5;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 5px;
+        }
+
+        .quick-action-btn {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .quick-action-btn:hover {
+            transform: scale(1.02);
+        }
+
+        .footer {
+            background-color: var(--logistics-dark);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 2rem;
+        }
+
+        .vulnerability-demo {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-truck-moving me-2"></i>
+                SecureLogistics
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">
+                            <i class="fas fa-home me-1"></i>대시보드
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/warehouse">
+                            <i class="fas fa-warehouse me-1"></i>입고관리
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/shipping">
+                            <i class="fas fa-shipping-fast me-1"></i>출고관리
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/inventory">
+                            <i class="fas fa-boxes me-1"></i>재고조회
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/tracking">
+                            <i class="fas fa-route me-1"></i>배송추적
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cog me-1"></i>시스템관리
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/admin/users">직원관리</a></li>
+                            <li><a class="dropdown-item" href="/admin/logs">시스템로그</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-warning" href="/vulnerable">
+                                <i class="fas fa-bug me-1"></i>취약점 실습
+                            </a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">
+                            <i class="fas fa-sign-in-alt me-1"></i>로그인
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="display-4 fw-bold">통합물류관리시스템</h1>
+                    <p class="lead">실시간 물류 현황 모니터링 및 효율적인 재고 관리</p>
+                    <div class="vulnerability-demo">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>보안 실습 모드:</strong> 이 시스템은 Log4j 취약점 교육을 위해 구성되었습니다.
+                    </div>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <i class="fas fa-chart-line" style="font-size: 8rem; opacity: 0.3;"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Dashboard -->
+    <div class="container">
+        <!-- Security Alert -->
+        <div class="security-alert">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="mb-1"><i class="fas fa-shield-alt me-2"></i>보안 상태</h5>
+                    <p class="mb-0">Log4j 취약점 탐지 시스템이 활성화되어 있습니다. 의심스러운 활동을 모니터링 중입니다.</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-outline-danger" onclick="checkSecurity()">
+                        <i class="fas fa-search me-1"></i>보안 점검
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card dashboard-card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-download dashboard-icon text-primary"></i>
+                        <h3 class="stats-number text-primary">1,234</h3>
+                        <p class="card-text">오늘 입고</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card dashboard-card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-upload dashboard-icon text-success"></i>
+                        <h3 class="stats-number text-success">897</h3>
+                        <p class="card-text">오늘 출고</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card dashboard-card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-clock dashboard-icon text-warning"></i>
+                        <h3 class="stats-number text-warning">156</h3>
+                        <p class="card-text">대기 중</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card dashboard-card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-exclamation-triangle dashboard-icon text-danger"></i>
+                        <h3 class="stats-number text-danger">23</h3>
+                        <p class="card-text">보안 이벤트</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts and Quick Actions -->
+        <div class="row">
+            <!-- Chart Section -->
+            <div class="col-lg-8">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-chart-area me-2"></i>물류 현황</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="logisticsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activities -->
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>최근 활동</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-box text-primary me-2"></i>
+                                    상품 입고 등록 - SKU12345
+                                </div>
+                                <small class="text-muted">2분 전</small>
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-search text-info me-2"></i>
+                                    재고 검색 실행
+                                </div>
+                                <small class="text-muted">5분 전</small>
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                    의심스러운 검색 패턴 탐지
+                                </div>
+                                <small class="text-muted">7분 전</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="col-lg-4">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>빠른 작업</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary quick-action-btn" onclick="location.href='/api/boards'">
+                            <i class="fas fa-plus me-2"></i>입고 등록
+                        </button>
+                        <button class="btn btn-success quick-action-btn" onclick="showSearchModal()">
+                            <i class="fas fa-search me-2"></i>재고 검색
+                        </button>
+                        <button class="btn btn-info quick-action-btn" onclick="location.href='/tracking'">
+                            <i class="fas fa-truck me-2"></i>배송 조회
+                        </button>
+                        <button class="btn btn-warning quick-action-btn" onclick="location.href='/api/vulnerable'">
+                            <i class="fas fa-bug me-2"></i>취약점 실습
+                        </button>
+                    </div>
+                </div>
+
+                <!-- System Status -->
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-server me-2"></i>시스템 상태</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="mb-2">
+                                    <i class="fas fa-database fa-2x text-success"></i>
+                                </div>
+                                <small>데이터베이스</small>
+                                <div class="text-success fw-bold">정상</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-2">
+                                    <i class="fas fa-shield-alt fa-2x text-danger"></i>
+                                </div>
+                                <small>보안</small>
+                                <div class="text-danger fw-bold">취약</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Modal -->
+    <div class="modal fade" id="searchModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-search me-2"></i>재고 검색</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="searchForm">
+                        <div class="mb-3">
+                            <label for="searchKeyword" class="form-label">검색어</label>
+                            <input type="text" class="form-control" id="searchKeyword" placeholder="상품명, SKU, 카테고리 등을 입력하세요">
+                            <div class="form-text">⚠️ 이 검색 기능은 Log4j 취약점 실습용입니다.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="searchType" class="form-label">검색 유형</label>
+                            <select class="form-select" id="searchType">
+                                <option value="all">전체</option>
+                                <option value="product">상품명</option>
+                                <option value="sku">SKU</option>
+                                <option value="category">카테고리</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" onclick="performSearch()">검색</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>SecureLogistics</h5>
+                    <p>Log4j 취약점 교육을 위한 실습용 물류관리시스템</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p class="mb-1">⚠️ 교육 목적으로만 사용하세요</p>
+                    <p class="mb-0">Version: 1.0.0 | Log4j: 2.14.1 (Vulnerable)</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Chart initialization
+        const ctx = document.getElementById('logisticsChart').getContext('2d');
+        const logisticsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                datasets: [{
+                    label: '입고',
+                    data: [12, 19, 3, 5, 2, 3],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }, {
+                    label: '출고',
+                    data: [7, 11, 5, 8, 3, 7],
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '오늘의 물류 현황'
+                    }
+                }
+            }
+        });
+
+        // Search modal functions
+        function showSearchModal() {
+            new bootstrap.Modal(document.getElementById('searchModal')).show();
+        }
+
+        // 🚨 Log4j 취약점 실습: 검색 기능
+        function performSearch() {
+            const keyword = document.getElementById('searchKeyword').value;
+            const type = document.getElementById('searchType').value;
+            
+            // Ajax 요청으로 검색 수행 (Log4j 로깅 트리거)
+            fetch(`/api/boards/search?q=${encodeURIComponent(keyword)}&type=${type}`)
+                .then(response => response.json())
+                .then(data => {
+                    alert(`검색 완료: "${keyword}" (${data.totalElements || 0}건)`);
+                    bootstrap.Modal.getInstance(document.getElementById('searchModal')).hide();
+                })
+                .catch(error => {
+                    console.error('검색 오류:', error);
+                    alert('검색 중 오류가 발생했습니다.');
+                });
+        }
+
+        // 🚨 Log4j 취약점 실습: 보안 점검
+        function checkSecurity() {
+            fetch('/api/vulnerable/simulate-attack', {
+                method: 'POST'
+            })
+            .then(response => response.text())
+            .then(data => {
+                alert('보안 점검이 완료되었습니다. 시스템 로그를 확인하세요.');
+            })
+            .catch(error => {
+                console.error('보안 점검 오류:', error);
+            });
+        }
+
+        // Page load effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate cards on load
+            const cards = document.querySelectorAll('.dashboard-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    card.style.transition = 'all 0.5s ease';
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 100);
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

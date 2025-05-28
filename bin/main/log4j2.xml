@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+⚠️ 취약한 Log4j2 설정 파일 (교육 목적용)
+실제 운영 환경에서는 절대 사용하지 마세요!
+-->
+<Configuration status="WARN">
+    
+    <!-- 변수 정의 -->
+    <Properties>
+        <Property name="LOG_PATTERN">
+            %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n
+        </Property>
+        <Property name="LOG_PATTERN_WITH_LOCATION">
+            %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36}:%L - %msg%n
+        </Property>
+        <Property name="LOG_DIR">./logs</Property>
+    </Properties>
+
+    <Appenders>
+        
+        <!-- 콘솔 출력 -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <!-- 🚨 취약점: 색상 코드 처리 시 JNDI 룩업 활성화 -->
+            <PatternLayout pattern="%highlight{${LOG_PATTERN}}{FATAL=red blink, ERROR=red, WARN=yellow bold, INFO=green, DEBUG=green bold, TRACE=blue}"/>
+        </Console>
+
+        <!-- 🚨 취약한 파일 로거 - JNDI 룩업 활성화 -->
+        <File name="VulnerableFileLogger" fileName="${LOG_DIR}/vulnerable.log">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <!-- 🚨 JNDI 룩업이 활성화된 상태 (formatMsgNoLookups=false) -->
+        </File>
+
+        <!-- 보안 이벤트 로거 -->
+        <File name="SecurityLogger" fileName="${LOG_DIR}/security.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [SECURITY] %-5level %logger{36} - %msg%n"/>
+        </File>
+
+        <!-- 사용자 활동 로거 -->
+        <File name="UserActivityLogger" fileName="${LOG_DIR}/user-activity.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [ACTIVITY] %-5level %logger{36} - %msg%n"/>
+        </File>
+
+        <!-- 🚨 취약한 롤링 파일 로거 -->
+        <RollingFile name="VulnerableRollingFile" 
+                     fileName="${LOG_DIR}/app.log"
+                     filePattern="${LOG_DIR}/app-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${LOG_PATTERN_WITH_LOCATION}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="100 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+        </RollingFile>
+
+        <!-- 에러 전용 로거 -->
+        <File name="ErrorLogger" fileName="${LOG_DIR}/error.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [ERROR] %logger{36}:%L - %msg%n%throwable"/>
+            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+        </File>
+
+        <!-- 🚨 JNDI 공격 탐지용 로거 (역설적으로 취약함) -->
+        <File name="JndiDetectionLogger" fileName="${LOG_DIR}/jndi-detection.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [JNDI-ALERT] - %msg%n"/>
+        </File>
+
+        <!-- 🚨 취약한 SMTP 로거 (설정 예시) -->
+        <!--
+        <SMTP name="MailLogger" 
+              subject="Log4j Vulnerability Alert: ${hostName}"
+              to="admin@example.com"
+              from="noreply@example.com"
+              smtpHost="smtp.example.com"
+              smtpPort="587"
+              smtpUsername="user"
+              smtpPassword="pass">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+        </SMTP>
+        -->
+
+    </Appenders>
+
+    <Loggers>
+        
+        <!-- 🚨 취약점 실습 패키지 로거 - 모든 입력을 로깅 -->
+        <Logger name="com.example.demo.api.vulnerability" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="VulnerableFileLogger"/>
+            <AppenderRef ref="JndiDetectionLogger"/>
+        </Logger>
+
+        <!-- 🚨 사용자 서비스 로거 - 사용자 입력 로깅 -->
+        <Logger name="com.example.demo.api.common.service.UserService" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="UserActivityLogger"/>
+            <AppenderRef ref="VulnerableRollingFile"/>
+        </Logger>
+
+        <!-- 🚨 게시판 서비스 로거 - 검색어 로깅 -->
+        <Logger name="com.example.demo.api.board.service.BoardService" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="VulnerableFileLogger"/>
+            <AppenderRef ref="UserActivityLogger"/>
+        </Logger>
+
+        <!-- 보안 관련 로거 -->
+        <Logger name="SECURITY" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="SecurityLogger"/>
+        </Logger>
+
+        <!-- Spring Security 로거 -->
+        <Logger name="org.springframework.security" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="SecurityLogger"/>
+        </Logger>
+
+        <!-- Hibernate SQL 로거 -->
+        <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <!-- 🚨 HTTP 요청 로거 - 헤더 정보 포함 -->
+        <Logger name="HTTP_REQUEST" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="VulnerableFileLogger"/>
+        </Logger>
+
+        <!-- 🚨 에러 로거 - 사용자 입력이 포함된 에러 -->
+        <Logger name="ERROR_WITH_INPUT" level="ERROR" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="ErrorLogger"/>
+            <AppenderRef ref="VulnerableFileLogger"/>
+        </Logger>
+
+        <!-- Root 로거 -->
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="VulnerableRollingFile"/>
+            <AppenderRef ref="ErrorLogger" level="ERROR"/>
+        </Root>
+
+    </Loggers>
+
+</Configuration>
+
+<!--
+⚠️ 보안 경고:
+이 설정 파일은 Log4j 취약점(CVE-2021-44228) 실습을 위해 의도적으로 취약하게 작성되었습니다.
+
+취약한 요소들:
+1. JNDI 룩업이 활성화됨 (formatMsgNoLookups 설정 없음)
+2. 사용자 입력을 직접 로깅
+3. HTTP 헤더 정보를 필터링 없이 로깅
+4. 에러 메시지에 사용자 입력 포함
+
+완화 방법:
+1. Log4j 2.17.1 이상으로 업그레이드
+2. JVM 옵션: -Dlog4j2.formatMsgNoLookups=true
+3. 사용자 입력 검증 및 필터링
+4. 네트워크 수준에서 외부 LDAP/RMI 연결 차단
+-->

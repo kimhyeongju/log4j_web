@@ -1,0 +1,32 @@
+# src/main/resources/application-prod.yml
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://mysql:3306/log4j_demo?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul}
+    username: ${SPRING_DATASOURCE_USERNAME:log4j_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:log4j_pass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+  thymeleaf:
+    cache: true
+
+# 로깅 설정
+logging:
+  config: classpath:log4j2.xml
+  level:
+    com.example.demo: INFO
+    root: WARN
+
+# 서버 설정
+server:
+  port: 8080
+  error:
+    whitelabel:
+      enabled: false
