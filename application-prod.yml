@@ -1,18 +1,27 @@
-# src/main/resources/application-prod.yml
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://mysql:3306/log4j_demo?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul}
-    username: ${SPRING_DATASOURCE_USERNAME:log4j_user}
-    password: ${SPRING_DATASOURCE_PASSWORD:log4j_pass}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://192.168.100.71:3306/log4j_demo?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul}
+    username: ${SPRING_DATASOURCE_USERNAME:webuser}
+    password: ${SPRING_DATASOURCE_PASSWORD:webuser}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    # 연결 풀 설정
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 30000
+      validation-timeout: 5000
+      leak-detection-threshold: 60000
 
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: false
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
+        jdbc:
+          time_zone: Asia/Seoul
 
   thymeleaf:
     cache: true

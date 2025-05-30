@@ -1,1 +1,0 @@
-2025/05/27 10:23:04 [error] 22#22: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 172.20.0.1, server: localhost, request: "GET /health HTTP/1.1", upstream: "http://172.20.0.3:8080/actuator/health", host: "localhost"

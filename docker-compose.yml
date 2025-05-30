@@ -1,46 +1,33 @@
 version: '3.8'
 
 services:
-  # MySQL 데이터베이스
-  mysql:
-    image: mysql:8.0
-    container_name: log4j-mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: rootoor
-      MYSQL_DATABASE: log4j_demo
-      MYSQL_USER: log4j_user
-      MYSQL_PASSWORD: log4j_pass
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    networks:
-      - log4j-network
-    restart: unless-stopped
-    command: --default-authentication-plugin=mysql_native_password
-
   # Spring Boot 애플리케이션
   app:
     build: .
     container_name: log4j-app
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/log4j_demo?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
-      - SPRING_DATASOURCE_USERNAME=log4j_user
-      - SPRING_DATASOURCE_PASSWORD=log4j_pass
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=create-drop
+      - SPRING_DATASOURCE_URL=jdbc:mysql://192.168.100.71:3306/log4j_demo?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+      - SPRING_DATASOURCE_USERNAME=webuser
+      - SPRING_DATASOURCE_PASSWORD=webuser
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - SPRING_JPA_SHOW_SQL=true
       - JAVA_OPTS=-Dlog4j2.formatMsgNoLookups=false -Dcom.sun.jndi.ldap.object.trustURLCodebase=true -Dcom.sun.jndi.rmi.object.trustURLCodebase=true
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
     ports:
       - "8080:8080"
     volumes:
       - ./logs:/app/logs
-    depends_on:
-      - mysql
     networks:
       - log4j-network
     restart: unless-stopped
+    # MySQL 서버가 준비될 때까지 재시도
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
 
   # Nginx 리버스 프록시
   nginx:
@@ -58,9 +45,6 @@ services:
     networks:
       - log4j-network
     restart: unless-stopped
-
-volumes:
-  mysql_data:
 
 networks:
   log4j-network:
