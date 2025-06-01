@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log4j-app
+  namespace: log4j-demo
+  labels:
+    app: log4j-web
+    version: v1
+spec:
+  replicas: 2 # 고가용성을 위한 2개 복제본
+  selector:
+    matchLabels:
+      app: log4j-web
+  template:
+    metadata:
+      labels:
+        app: log4j-web
+        version: v1
+    spec:
+      containers:
+        - name: log4j-app
+          image: hyeongju6/cloudguardians:latest
+          imagePullPolicy: Always # 항상 최신 이미지 풀
+          ports:
+            - containerPort: 8080
+              name: http
+
+          # 환경 변수 설정
+          envFrom:
+            - configMapRef:
+                name: log4j-app-config
+            - secretRef:
+                name: log4j-app-secret
+
+          # 리소스 제한
+          resources:
+            requests:
+              memory: '512Mi'
+              cpu: '250m'
+            limits:
+              memory: '1Gi'
+              cpu: '500m'
+
+          # 헬스체크 설정
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # 볼륨 마운트 (로그 저장용)
+          volumeMounts:
+            - name: app-logs
+              mountPath: /app/logs
+
+      # 볼륨 설정
+      volumes:
+        - name: app-logs
+          emptyDir: {}
+
+      # 재시작 정책
+      restartPolicy: Always
+
+      # 노드 셀렉터 (필요시 사용)
+      # nodeSelector:
+      #   kubernetes.io/os: linux

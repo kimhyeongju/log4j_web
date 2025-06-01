@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: log4j-app-config
+  namespace: log4j-demo
+  labels:
+    app: log4j-web
+data:
+  # 데이터베이스 설정
+  SPRING_DATASOURCE_URL: 'jdbc:mysql://192.168.100.71:3306/log4j_demo?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul'
+  SPRING_DATASOURCE_USERNAME: 'webuser'
+  SPRING_DATASOURCE_DRIVER_CLASS_NAME: 'com.mysql.cj.jdbc.Driver'
+
+  # JPA 설정
+  SPRING_JPA_HIBERNATE_DDL_AUTO: 'update'
+  SPRING_JPA_SHOW_SQL: 'true'
+
+  # 프로파일 설정
+  SPRING_PROFILES_ACTIVE: 'prod'
+
+  # Java 옵션 (Log4j 취약점 실습용)
+  JAVA_OPTS: '-Dlog4j2.formatMsgNoLookups=false -Dcom.sun.jndi.ldap.object.trustURLCodebase=true -Dcom.sun.jndi.rmi.object.trustURLCodebase=true'

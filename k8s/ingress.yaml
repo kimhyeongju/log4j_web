@@ -1,0 +1,40 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: log4j-app-ingress
+  namespace: log4j-demo
+  labels:
+    app: log4j-web
+  annotations:
+    # NGINX Ingress Controller용 설정
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+    # 로드밸런싱 방식
+    nginx.ingress.kubernetes.io/load-balance: 'round_robin'
+    # 세션 어피니티 (필요시)
+    # nginx.ingress.kubernetes.io/affinity: "cookie"
+spec:
+  # TLS 설정 (HTTPS 사용 시)
+  # tls:
+  # - hosts:
+  #   - log4j-demo.local
+  #   secretName: log4j-tls-secret
+
+  rules:
+    - host: log4j-demo.local # 로컬 테스트용 도메인
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: log4j-app-service
+                port:
+                  number: 80
+
+  # 기본 백엔드 (도메인 없이 접근 시)
+  defaultBackend:
+    service:
+      name: log4j-app-service
+      port:
+        number: 80
