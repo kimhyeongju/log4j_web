@@ -99,8 +99,8 @@ tasks.named('test') {
     // 테스트 시에도 취약한 Log4j 사용
     systemProperty 'log4j2.formatMsgNoLookups', 'false'
     
-    // 테스트 비활성화 (실습 목적이므로)
-    enabled = false
+    // CI 환경에서는 테스트 활성화, 로컬에서는 비활성화
+    enabled = System.getenv("CI") == "true" || project.hasProperty("enableTests")
 }
 
 // WAR 파일 설정
