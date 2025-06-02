@@ -3,10 +3,10 @@ name: CI/CD Pipeline
 # 트리거 조건
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
-  workflow_dispatch:  # 수동 실행 가능
+    branches: [main]
+  workflow_dispatch: # 수동 실행 가능
 
 # 환경 변수
 env:
@@ -17,124 +17,123 @@ jobs:
   # Job 1: 테스트 및 빌드
   test-and-build:
     runs-on: ubuntu-latest
-    
+
     steps:
-    # 1. 코드 체크아웃
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    # 2. Java 17 설정
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: ${{ env.JAVA_VERSION }}
-        distribution: 'temurin'
-        
-    # 3. Gradle 캐시 설정
-    - name: Cache Gradle packages
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
-          
-    # 4. Gradle 실행 권한 부여
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-      
-    # 5. 테스트 실행 (H2 데이터베이스 사용) - 임시로 스킵
-    - name: Run tests
-      run: echo "Tests temporarily skipped - will enable after H2 configuration"
-      # run: ./gradlew test -Dspring.profiles.active=test
-      env:
-        SPRING_PROFILES_ACTIVE: test
-        
-    # 6. 애플리케이션 빌드
-    - name: Build application
-      run: ./gradlew build -x test
-      
-    # 7. 빌드 결과물 업로드 (다음 Job에서 사용)
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-artifacts
-        path: build/libs/*.jar
-        retention-days: 1
+      # 1. 코드 체크아웃
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Java 17 설정
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      # 3. Gradle 캐시 설정
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 4. Gradle 실행 권한 부여
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 5. 테스트 실행 (H2 데이터베이스 사용)
+      - name: Run tests
+        run: ./gradlew test -Dspring.profiles.active=test
+        env:
+          SPRING_PROFILES_ACTIVE: test
+
+      # 6. 애플리케이션 빌드
+      - name: Build application
+        run: ./gradlew build -x test
+
+      # 7. 빌드 결과물 업로드 (다음 Job에서 사용)
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: build/libs/*.jar
+          retention-days: 1
 
   # Job 2: Docker 이미지 빌드 및 푸시
   docker-build-push:
     needs: test-and-build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'  # main 브랜치에서만 실행
-    
+    if: github.ref == 'refs/heads/main' # main 브랜치에서만 실행
+
     steps:
-    # 1. 코드 체크아웃
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    # 2. 빌드 결과물 다운로드
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: build-artifacts
-        path: build/libs/
-        
-    # 3. Docker Buildx 설정
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    # 4. Docker Hub 로그인
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: hyeongju6  # 하드코딩 (임시)
-        password: ${{ secrets.TEST }}  # TEST secret 사용
-        
-    # 5. 메타데이터 추출 (태그 생성용)
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.DOCKER_IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-          type=raw,value={{branch}},enable={{is_default_branch}}
-          
-    # 6. Docker 이미지 빌드 및 푸시
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        platforms: linux/amd64,linux/arm64
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        
-    # 7. 이미지 정보 출력
-    - name: Image digest
-      run: echo ${{ steps.meta.outputs.digest }}
+      # 1. 코드 체크아웃
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 빌드 결과물 다운로드
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: build/libs/
+
+      # 3. Docker Buildx 설정
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 4. Docker Hub 로그인
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      # 5. 메타데이터 추출 (태그 생성용)
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value={{branch}},enable={{is_default_branch}}
+
+      # 6. Docker 이미지 빌드 및 푸시
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 7. 이미지 정보 출력
+      - name: Image digest
+        run: echo ${{ steps.meta.outputs.digest }}
 
   # Job 3: 배포 알림 (선택사항)
   notify:
     needs: [test-and-build, docker-build-push]
     runs-on: ubuntu-latest
     if: always()
-    
+
     steps:
-    - name: Notify deployment status
-      run: |
-        if [[ "${{ needs.docker-build-push.result }}" == "success" ]]; then
-          echo "✅ Docker 이미지가 성공적으로 빌드되고 푸시되었습니다!"
-          echo "🐳 이미지: ${{ env.DOCKER_IMAGE_NAME }}:latest"
-          echo "📦 사용 가능한 태그들을 확인하세요: https://hub.docker.com/r/${{ env.DOCKER_IMAGE_NAME }}/tags"
-        else
-          echo "❌ 배포에 실패했습니다. 로그를 확인해주세요."
-        fi
+      - name: Notify deployment status
+        run: |
+          if [[ "${{ needs.docker-build-push.result }}" == "success" ]]; then
+            echo "✅ Docker 이미지가 성공적으로 빌드되고 푸시되었습니다!"
+            echo "🐳 이미지: ${{ env.DOCKER_IMAGE_NAME }}:latest"
+            echo "📦 사용 가능한 태그들을 확인하세요: https://hub.docker.com/r/${{ env.DOCKER_IMAGE_NAME }}/tags"
+          else
+            echo "❌ 배포에 실패했습니다. 로그를 확인해주세요."
+          fi
