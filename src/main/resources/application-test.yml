@@ -23,6 +23,15 @@ spring:
   # 테스트용 설정
   thymeleaf:
     cache: false
+  
+  # Spring Security 비활성화
+  security:
+    enabled: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+
 
 # 로깅 설정 (CI/CD용)
 logging:
