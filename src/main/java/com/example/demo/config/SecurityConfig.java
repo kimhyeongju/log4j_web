@@ -18,6 +18,8 @@ import java.util.Arrays;
 @Configuration
 @EnableWebSecurity
 @Log4j2
+@Profile("!test")  // test 프로파일이 아닐 때만 활성화
+@ConditionalOnProperty(name = "spring.security.enabled", havingValue = "true", matchIfMissing = true)
 public class SecurityConfig {
 
     @Bean
